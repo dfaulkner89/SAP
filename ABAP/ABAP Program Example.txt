@@ -1,0 +1,651 @@
+*&---------------------------------------------------------------------*
+*& Report ZTMP_ACADEMY_ABAP_DLF
+*&---------------------------------------------------------------------*
+*&
+*&---------------------------------------------------------------------*
+REPORT ZTMP_ACADEMY_ABAP_DLF.
+
+TABLES: LIPS, MARA.
+
+
+
+DATA: LT_EXERCISE    TYPE TABLE OF ZTMP_ACADEMY_S_DLF,
+      wa_LT_EXERCISE LIKE ZTMP_ACADEMY_S_DLF,
+      GV_TAB         TYPE C VALUE CL_ABAP_CHAR_UTILITIES=>HORIZONTAL_TAB,
+      GV_STR         TYPE STRING,
+      gv_email TYPE ad_smtpadr,
+      BEGIN OF GT_DATAREC OCCURS 10,
+        DATRC TYPE STRING,
+      END OF GT_DATAREC.
+*----------------------------------------------------------------------*
+*       CLASS cl_handler DEFINITION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS CL_HANDLER DEFINITION.
+  PUBLIC SECTION.
+    METHODS ON_DOUBLE_CLICK FOR EVENT DOUBLE_CLICK OF CL_SALV_EVENTS_TABLE
+      IMPORTING ROW COLUMN.
+ENDCLASS.                    "cl_handler DEFINITION
+
+*----------------------------------------------------------------------*
+*       CLASS cl_handler IMPLEMENTATION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS CL_HANDLER IMPLEMENTATION.
+  METHOD ON_DOUBLE_CLICK.
+    IF COLUMN EQ 'VBELN'.
+      READ TABLE LT_EXERCISE INTO DATA(WA_ST_DATA) INDEX ROW.
+
+* Check that material exists
+      SELECT COUNT( * ) FROM LIPS UP TO 1 ROWS WHERE VBELN EQ WA_ST_DATA-VBELN.
+
+      IF SY-SUBRC = 0. " Exists?
+* Load parameters
+        SET PARAMETER ID 'MXX' FIELD 'K'. " Default view
+        SET PARAMETER ID 'MAT' FIELD WA_ST_DATA-VBELN. " Material number
+
+        CALL TRANSACTION 'VL06G' AND SKIP FIRST SCREEN.
+      ELSE. " No ?
+
+        CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+          EXPORTING
+            INPUT  = WA_ST_DATA-VBELN
+          IMPORTING
+            OUTPUT = WA_ST_DATA-VBELN.
+
+        DATA(LV_ERR) = `Delivery ` && WA_ST_DATA-VBELN && ` does not exist.`.
+        MESSAGE LV_ERR TYPE 'I' DISPLAY LIKE 'E'.
+      ENDIF.
+    ELSE.
+      MESSAGE TEXT-002 TYPE 'I'. " Invalid cell
+    ENDIF.
+  ENDMETHOD.                    "on_double_click
+ENDCLASS.                    "cl_handler IMPLEMENTATION
+"----------ALV-------------------
+DATA: LO_GR_ALV       TYPE REF TO CL_SALV_TABLE, " Variables for ALV properties
+      LO_GR_FUNCTIONS TYPE REF TO CL_SALV_FUNCTIONS_LIST.
+
+DATA:
+  LO_EVENT_HANDLER TYPE REF TO CL_HANDLER, " Variables for events
+  LO_EVENTS        TYPE REF TO CL_SALV_EVENTS_TABLE.
+
+DATA: LO_GRID        TYPE REF TO CL_SALV_FORM_LAYOUT_GRID, " Variables for header
+      LO_LAYOUT_LOGO TYPE REF TO CL_SALV_FORM_LAYOUT_LOGO,
+      LO_CONTENT     TYPE REF TO CL_SALV_FORM_ELEMENT,
+      LV_TITLE       TYPE STRING,
+      LV_ROWS        TYPE STRING.
+
+DATA: LO_LAYOUT TYPE REF TO CL_SALV_LAYOUT, " Variables for enabling Save button
+      LV_KEY    TYPE SALV_S_LAYOUT_KEY.
+
+DATA: LO_DISPLAY TYPE REF TO CL_SALV_DISPLAY_SETTINGS. " Variable for layout settings
+
+DATA: LO_SELECTIONS TYPE REF TO CL_SALV_SELECTIONS, " Variables for selection mode and column properties
+      LO_COLUMNS    TYPE REF TO CL_SALV_COLUMNS,
+      LO_COLUMN     TYPE REF TO CL_SALV_COLUMN_TABLE.
+
+"Declared for allowing user selected ALV Layout
+DATA:SET_LAY   TYPE SLIS_VARI,
+     G_EXIT    TYPE C,
+     G_VARIANT TYPE DISVARIANT.
+
+
+************SELECTION CRITERIA - BLOCK 1**************************
+SELECTION-SCREEN BEGIN OF BLOCK B1 WITH FRAME TITLE TEXT-H01.
+  SELECT-OPTIONS:  o_DELCDT FOR LIPS-ERDAT OBLIGATORY.
+SELECTION-SCREEN END OF BLOCK B1.
+
+SELECTION-SCREEN SKIP.
+
+************PROCESSIN TYPE - BLOCK 2******************************
+SELECTION-SCREEN BEGIN OF BLOCK B2 WITH FRAME TITLE TEXT-H02.
+  "-----ALV Radio Button-----
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS: r_ALV   RADIOBUTTON GROUP GRP1 DEFAULT 'X'.
+    SELECTION-SCREEN COMMENT 3(20) TEXT-R01.
+    PARAMETERS: P_VAR TYPE DISVARIANT-VARIANT.
+    SELECTION-SCREEN COMMENT 38(79) TEXT-R05.
+  SELECTION-SCREEN END OF LINE.
+  "-----Download Radio Button-----
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS: r_DWNLD RADIOBUTTON GROUP GRP1.
+    SELECTION-SCREEN COMMENT 3(20) TEXT-R02.
+  SELECTION-SCREEN END OF LINE.
+  "-----Email List Radio Button-----
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS: r_EMAIL RADIOBUTTON GROUP GRP1.
+    SELECTION-SCREEN COMMENT 3(17) TEXT-R06.
+SELECT-OPTIONS:  o_emladd for gv_email NO INTERVALS MODIF ID m1.
+  SELECTION-SCREEN END OF LINE.
+   "-----Email DL Radio Button-----
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS: r_EMLDL RADIOBUTTON GROUP GRP1.
+     SELECTION-SCREEN COMMENT 3(20) TEXT-R07.
+    PARAMETERS: p_dlgrp TYPE so_obj_nam.
+    SELECTION-SCREEN END OF LINE.
+SELECTION-SCREEN END OF BLOCK B2.
+
+SELECTION-SCREEN SKIP.
+
+************DOWNLOAD OPTIONS - BLOCK 3***********************
+SELECTION-SCREEN BEGIN OF BLOCK B3 WITH FRAME TITLE TEXT-H03.
+  SELECTION-SCREEN BEGIN OF LINE.
+    PARAMETERS: r_Server RADIOBUTTON GROUP GRP2 DEFAULT 'X'.
+    SELECTION-SCREEN COMMENT 3(20) TEXT-R03.
+    PARAMETERS: r_Local  RADIOBUTTON GROUP GRP2.
+    SELECTION-SCREEN COMMENT 26(20) TEXT-R04.
+  SELECTION-SCREEN END OF LINE.
+  PARAMETERS: p_DwnDir TYPE C LENGTH 100 LOWER CASE.
+SELECTION-SCREEN END OF BLOCK B3.
+
+***********INITIALIZATION**********************************
+***********************************************************
+INITIALIZATION.
+
+***********SELECTION SCREEN OUTPUT*************************
+***********************************************************
+
+AT SELECTION-SCREEN OUTPUT.
+
+************SEARCH HELP/FILE SELECTOR***********************
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_DwnDir.
+  PERFORM GET_FILE_NAME.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR P_VAR.
+  G_VARIANT-REPORT = SY-REPID.
+  CALL FUNCTION 'REUSE_ALV_VARIANT_F4'
+    EXPORTING
+      IS_VARIANT    = G_VARIANT
+      I_SAVE        = 'A'
+    IMPORTING
+      E_EXIT        = G_EXIT
+      ES_VARIANT    = G_VARIANT
+    EXCEPTIONS
+      NOT_FOUND     = 1
+      PROGRAM_ERROR = 2
+      OTHERS        = 3.
+  .
+  IF SY-SUBRC = 0.
+    P_VAR = G_VARIANT-VARIANT.
+    SET_LAY = G_VARIANT-VARIANT.
+  ENDIF.
+
+AT SELECTION-SCREEN ON VALUE-REQUEST FOR p_dlgrp.
+  PERFORM GET_DL_LIST.
+
+*&---------------------------------------------------------------------*
+*& Form SELECT_DeliveryInfo
+*&---------------------------------------------------------------------*
+FORM SELECT_DeliveryInfo.
+  SELECT
+    L~VBELN
+    ,L~POSNR
+    ,L~ERDAT
+    ,L~MATNR
+    ,L~CHARG
+    ,L~LGMNG
+    ,L~MEINS
+    ,L~VRKME
+    ,M~DPCBT
+*  ,CALC_LFIMG
+*  ,CALC_DPCBT_LABEL
+    INTO CORRESPONDING FIELDS OF TABLE @LT_EXERCISE
+    FROM LIPS AS L
+    INNER JOIN MARA AS M ON L~MATNR = M~MATNR
+    WHERE L~ERDAT IN @o_DelCDt.
+
+  LOOP AT LT_EXERCISE INTO DATA(LS_EXERCISE).
+    "Delete records with LGMNG = 0
+    IF LS_EXERCISE-LGMNG EQ 0.
+      DELETE TABLE LT_EXERCISE FROM LS_EXERCISE.
+    ENDIF.
+    "Convert Qty to Sales UOM
+    IF LS_EXERCISE-MEINS NE LS_EXERCISE-VRKME.
+      CALL FUNCTION 'MD_CONVERT_MATERIAL_UNIT'
+        EXPORTING
+          I_MATNR  = LS_EXERCISE-MATNR
+          I_IN_ME  = LS_EXERCISE-MEINS
+          I_OUT_ME = LS_EXERCISE-VRKME
+          I_MENGE  = LS_EXERCISE-LGMNG
+        IMPORTING
+          E_MENGE  = LS_EXERCISE-CALC_LFIMG
+*     EXCEPTIONS
+*         ERROR_IN_APPLICATION       = 1
+*         ERROR    = 2
+*         OTHERS   = 3
+        .
+      IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+      ENDIF.
+
+    ENDIF.
+
+    "Get Batch Type
+    CALL FUNCTION 'ZTMP_ACDM_FM_GET_DPCBT_LBL_DLF'
+      EXPORTING
+        I_DPCBT     = LS_EXERCISE-DPCBT
+      IMPORTING
+        E_BATCHTYPE = LS_EXERCISE-CALC_DPCBT_LABEL.
+    MODIFY LT_EXERCISE FROM LS_EXERCISE.
+
+  ENDLOOP.
+
+*  DATA: lv_count type I.
+*  Loop at lv_table assigning field-symbol (fs_tab>).
+*    lv_count += 1.
+*  <fs_tab>-so_number = conv #(lv_count).
+*  condense <fs_tab>-so_number no-gaps.
+*    remove <fs_tab>.
+*  endloop.
+
+ENDFORM.
+
+***********START OF SELECTION******************************
+***********************************************************
+START-OF-SELECTION.
+  PERFORM SELECT_DeliveryInfo.
+  PERFORM BUILD_ALV.
+  "Processing Type = ALV Grid
+  IF r_ALV = 'X'.
+    PERFORM DISPLAY_ALV.
+  ENDIF.
+
+  "Processing Type = Download
+  IF r_DWNLD = 'X'.
+    PERFORM PROCESS_DATA_FOR_OUTPUT.
+    PERFORM EXPORT_DATA_FILE.
+  ENDIF.
+
+  "Processing Type = Email
+  IF r_EMAIL = 'X' OR r_EMLDL = 'X'.
+    PERFORM EMAIL_ALV.
+  ENDIF.
+
+*---------------------------------------------------------------------*
+*         Form     BUILD_ALV                                        *
+*---------------------------------------------------------------------*
+FORM BUILD_ALV.
+
+  IF SET_LAY EQ ''.
+    SET_LAY = P_VAR.
+  ENDIF.
+
+* Create the ALV object
+  TRY.
+      CALL METHOD CL_SALV_TABLE=>FACTORY
+        IMPORTING
+          R_SALV_TABLE = LO_GR_ALV
+        CHANGING
+          T_TABLE      = LT_EXERCISE.
+    CATCH CX_SALV_MSG.
+  ENDTRY.
+
+* Let's show all default buttons of ALV
+  LO_GR_FUNCTIONS = LO_GR_ALV->GET_FUNCTIONS( ).
+  LO_GR_FUNCTIONS->SET_ALL( ABAP_TRUE ).
+
+* Fit the columns
+  LO_COLUMNS = LO_GR_ALV->GET_COLUMNS( ).
+  LO_COLUMNS->SET_OPTIMIZE( 'X' ).
+
+* Create header
+  DESCRIBE TABLE LT_EXERCISE LINES LV_ROWS.
+  CONCATENATE 'Number of rows: ' LV_ROWS INTO LV_TITLE SEPARATED BY SPACE.
+
+  CREATE OBJECT LO_GRID.
+  CREATE OBJECT LO_LAYOUT_LOGO.
+  LO_GRID->CREATE_LABEL( ROW = 1 COLUMN = 1 TEXT = LV_TITLE TOOLTIP = LV_TITLE ).
+  LO_LAYOUT_LOGO->SET_LEFT_CONTENT( LO_GRID ).
+  LO_CONTENT = LO_LAYOUT_LOGO.
+  LO_GR_ALV->SET_TOP_OF_LIST( LO_CONTENT ).
+
+* Apply zebra style to lv_rows
+  LO_DISPLAY = LO_GR_ALV->GET_DISPLAY_SETTINGS( ).
+  LO_DISPLAY->SET_STRIPED_PATTERN( CL_SALV_DISPLAY_SETTINGS=>TRUE ).
+
+* Enable the save layout buttons
+  LV_KEY-REPORT = SY-REPID.
+  LO_LAYOUT = LO_GR_ALV->GET_LAYOUT( ).
+  LO_LAYOUT->SET_KEY( LV_KEY ).
+  LO_LAYOUT->SET_SAVE_RESTRICTION( IF_SALV_C_LAYOUT=>RESTRICT_NONE ).
+  LO_LAYOUT->SET_DEFAULT( ABAP_TRUE ).
+  LO_LAYOUT->SET_INITIAL_LAYOUT( VALUE = SET_LAY ).
+
+* Register events
+  LO_EVENTS = LO_GR_ALV->GET_EVENT( ).
+  CREATE OBJECT LO_EVENT_HANDLER.
+  SET HANDLER LO_EVENT_HANDLER->ON_DOUBLE_CLICK FOR LO_EVENTS.
+
+* Enable cell selection mode
+  LO_SELECTIONS = LO_GR_ALV->GET_SELECTIONS( ).
+  LO_SELECTIONS->SET_SELECTION_MODE( IF_SALV_C_SELECTION_MODE=>ROW_COLUMN ).
+
+  TRY.
+      LO_COLUMN ?= LO_COLUMNS->GET_COLUMN( 'CALC_DPCBT_LABEL' ). " Find the 'MAKTX' column ans change attributes
+      LO_COLUMN->SET_VISIBLE( IF_SALV_C_BOOL_SAP=>TRUE ).
+      LO_COLUMN->SET_LONG_TEXT( 'BatchType' ).
+      LO_COLUMN->SET_MEDIUM_TEXT( 'BatchType' ).
+      LO_COLUMN->SET_SHORT_TEXT( 'BatchType' ).
+    CATCH CX_SALV_NOT_FOUND.
+    CATCH CX_SALV_EXISTING.
+    CATCH CX_SALV_DATA_ERROR.
+  ENDTRY.
+
+  TRY.
+      LO_COLUMN ?= LO_COLUMNS->GET_COLUMN( 'CALC_LFIMG' ). " Find the 'MAKTX' column ans change attributes
+      LO_COLUMN->SET_VISIBLE( IF_SALV_C_BOOL_SAP=>TRUE ).
+      LO_COLUMN->SET_LONG_TEXT( 'ConvDelQty' ).
+      LO_COLUMN->SET_MEDIUM_TEXT( 'ConvDelQty' ).
+      LO_COLUMN->SET_SHORT_TEXT( 'ConvDelQty' ).
+    CATCH CX_SALV_NOT_FOUND.
+    CATCH CX_SALV_EXISTING.
+    CATCH CX_SALV_DATA_ERROR.
+  ENDTRY.
+ENDFORM.
+*---------------------------------------------------------------------*
+*         Form     DISPLAY_ALV                                        *
+*---------------------------------------------------------------------*
+FORM DISPLAY_ALV.
+  LO_GR_ALV->DISPLAY( ).
+ENDFORM.
+
+*&------------------------------------------------------------------*
+*& Form  GET_FILE_NAME
+*&------------------------------------------------------------------*
+FORM GET_FILE_NAME.
+  DATA: LV_RC   TYPE I,
+        LV_INIT TYPE STRING,
+        LT_FILE TYPE FILETABLE WITH HEADER LINE.
+
+  LV_INIT = p_DwnDir.
+  CALL METHOD CL_GUI_FRONTEND_SERVICES=>FILE_OPEN_DIALOG
+    EXPORTING
+      INITIAL_DIRECTORY       = LV_INIT
+    CHANGING
+      FILE_TABLE              = LT_FILE[]
+      RC                      = LV_RC
+    EXCEPTIONS
+      FILE_OPEN_DIALOG_FAILED = 1
+      CNTL_ERROR              = 2
+      ERROR_NO_GUI            = 3
+      NOT_SUPPORTED_BY_GUI    = 4
+      OTHERS                  = 5.
+
+  READ TABLE LT_FILE INDEX 1.
+  CHECK SY-SUBRC IS INITIAL.
+  p_DwnDir = LT_FILE.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form PROCESS_OUT_DATA
+*&---------------------------------------------------------------------*
+FORM PROCESS_DATA_FOR_OUTPUT.
+  REFRESH GT_DATAREC.
+  LOOP AT LT_EXERCISE INTO wa_LT_EXERCISE.
+    MODIFY LT_EXERCISE FROM wa_LT_EXERCISE.
+    IF ( r_DWNLD = 'X' AND p_DwnDir IS NOT INITIAL ).
+      PERFORM CONSTRUCT_DATA_STRING USING wa_LT_EXERCISE.
+    ENDIF.
+  ENDLOOP.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form CONSTRUCT_DATA_STRING
+*&---------------------------------------------------------------------*
+FORM CONSTRUCT_DATA_STRING USING I_DATA LIKE wa_LT_EXERCISE.
+  DATA: LV_CHAR(20),
+        s_LGMNG(30).
+
+  s_LGMNG = I_DATA-LGMNG.
+
+
+  CONCATENATE  I_DATA-VBELN I_DATA-POSNR
+               I_DATA-ERDAT I_DATA-MATNR
+               I_DATA-CHARG s_LGMNG
+               I_DATA-MEINS I_DATA-VRKME
+               I_DATA-DPCBT
+               INTO GV_STR SEPARATED BY GV_TAB.
+  GT_DATAREC-DATRC = GV_STR.
+  APPEND GT_DATAREC.
+ENDFORM.
+
+*&---------------------------------------------------------------------*
+*& Form EXPORT_DATA_FILE
+*&---------------------------------------------------------------------*
+FORM EXPORT_DATA_FILE .
+  CHECK r_DWNLD = 'X' AND p_DwnDir IS NOT INITIAL.
+  PERFORM BUILD_HEADER.
+  IF r_Server = 'X'.
+    PERFORM DOWNLOAD_TO_SERVER.
+  ELSEIF r_Local = 'X'.
+    PERFORM DOWNLOAD_TO_LOCAL.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form BUILD_HEADER
+*&---------------------------------------------------------------------*
+FORM BUILD_HEADER.
+  CONCATENATE TEXT-F01 TEXT-F02 TEXT-F03 TEXT-F04 TEXT-F05 TEXT-F06
+              TEXT-F07 TEXT-F08 TEXT-F09 TEXT-F10 TEXT-F11
+              INTO GV_STR SEPARATED BY GV_TAB.
+  GT_DATAREC-DATRC = GV_STR.
+  INSERT GT_DATAREC INDEX 1.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DOWNLOAD_TO_SERVER
+*&---------------------------------------------------------------------*
+FORM DOWNLOAD_TO_SERVER.
+  DATA LV_MSG TYPE CHAR50.
+  OPEN DATASET p_DwnDir FOR OUTPUT
+                IN TEXT MODE ENCODING DEFAULT MESSAGE LV_MSG.
+  IF SY-SUBRC = 0.
+    LOOP AT GT_DATAREC.
+      TRANSFER GT_DATAREC-DATRC TO p_DwnDir.
+    ENDLOOP.
+    CLOSE DATASET p_DwnDir.
+    PERFORM GENERATE_BATFILE.
+    PERFORM SHOW_DOWNLOAD_SUCCESS.
+  ELSE.
+    PERFORM SHOW_DOWNLOAD_FAILURE.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form DOWNLOAD_TO_LOCAL
+*&---------------------------------------------------------------------*
+FORM DOWNLOAD_TO_LOCAL .
+  DATA: LV_STR TYPE STRING.
+  LV_STR = p_DwnDir.
+  CALL FUNCTION 'GUI_DOWNLOAD'
+    EXPORTING
+      FILENAME                = LV_STR
+      FILETYPE                = 'ASC'
+    TABLES
+      DATA_TAB                = GT_DATAREC[]
+    EXCEPTIONS
+      FILE_WRITE_ERROR        = 1
+      NO_BATCH                = 2
+      GUI_REFUSE_FILETRANSFER = 3
+      INVALID_TYPE            = 4
+      NO_AUTHORITY            = 5
+      UNKNOWN_ERROR           = 6
+      HEADER_NOT_ALLOWED      = 7
+      SEPARATOR_NOT_ALLOWED   = 8
+      FILESIZE_NOT_ALLOWED    = 9
+      HEADER_TOO_LONG         = 10
+      DP_ERROR_CREATE         = 11
+      DP_ERROR_SEND           = 12
+      DP_ERROR_WRITE          = 13
+      UNKNOWN_DP_ERROR        = 14
+      ACCESS_DENIED           = 15
+      DP_OUT_OF_MEMORY        = 16
+      DISK_FULL               = 17
+      DP_TIMEOUT              = 18
+      FILE_NOT_FOUND          = 19
+      DATAPROVIDER_EXCEPTION  = 20
+      CONTROL_FLUSH_ERROR     = 21
+      OTHERS                  = 22.
+  IF SY-SUBRC <> 0.
+  ENDIF.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form  GENERATE_BATFILE
+*&---------------------------------------------------------------------*
+FORM GENERATE_BATFILE.
+  DATA: LV_EXT1 TYPE RLGRAP-FILENAME.
+  CONCATENATE p_DwnDir '.bat' INTO LV_EXT1.
+  OPEN DATASET LV_EXT1 FOR OUTPUT IN TEXT MODE
+                             ENCODING DEFAULT
+                             WITH SMART LINEFEED.
+  IF SY-SUBRC NE 0.
+    WRITE: 'Error Message Opening File '(105), SY-SUBRC.
+    EXIT.
+  ENDIF.
+  CLOSE DATASET LV_EXT1.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form  EMAIL_ALV
+*&---------------------------------------------------------------------*
+FORM EMAIL_ALV.
+
+  DATA: GV_XSTRING      TYPE XSTRING,
+        GV_XLEN         TYPE INT4,
+        GT_BINARY_TABLE TYPE SOLIX_TAB,
+        GR_REQUEST      TYPE REF TO CL_BCS,
+        GV_BODY_TEXT    TYPE BCSY_TEXT,
+        GV_SUBJECT      TYPE SO_OBJ_DES,
+        GR_RECIPIENT    TYPE REF TO IF_RECIPIENT_BCS,
+        GR_DOCUMENT     TYPE REF TO CL_DOCUMENT_BCS,
+        GV_SIZE         TYPE SO_OBJ_LEN,
+        email          TYPE adr6-smtp_addr.
+
+  TRY.
+      GV_XSTRING = LO_GR_ALV->TO_XML( xml_type = IF_SALV_BS_XML=>C_TYPE_XLSX ).
+
+      CALL FUNCTION 'SCMS_XSTRING_TO_BINARY'
+        EXPORTING
+          BUFFER        = GV_XSTRING
+        IMPORTING
+          OUTPUT_LENGTH = GV_XLEN
+        TABLES
+          BINARY_TAB    = GT_BINARY_TABLE.
+
+      GR_REQUEST = CL_BCS=>CREATE_PERSISTENT( ).
+
+      APPEND 'Test ABAP Email body text' TO GV_BODY_TEXT.
+      APPEND 'Line 2 of body test' to GV_BODY_TEXT.
+      GV_SUBJECT = 'ABAP Test Email'.
+
+      GR_DOCUMENT = CL_DOCUMENT_BCS=>CREATE_DOCUMENT(
+      I_TYPE = 'RAW'
+      I_TEXT = GV_BODY_TEXT
+      I_SUBJECT = GV_SUBJECT ).
+
+      GV_SIZE = GV_XLEN.
+      GR_DOCUMENT->ADD_ATTACHMENT(
+      I_ATTACHMENT_TYPE = 'xls'
+      I_ATTACHMENT_SUBJECT ='Deliveries Test File.xls'
+      I_ATTACHMENT_SIZE = GV_SIZE
+      I_ATTACHMENT_HEADER = VALUE #( ( line = 'Deliveries.xlsx' ) )
+      I_ATT_CONTENT_HEX = GT_BINARY_TABLE ).
+
+      GR_REQUEST->SET_DOCUMENT( GR_DOCUMENT ).
+
+      if r_EMAIL = 'X'.
+        Loop at o_emlAdd.
+          email = o_EmlAdd-low.
+
+      GR_RECIPIENT = CL_CAm_ADDRESS_BCS=>CREATE_INTERNET_ADDRESS( email ).
+      GR_REQUEST->ADD_RECIPIENT( GR_RECIPIENT ).
+      endloop.
+      endif.
+
+      if r_EMLDL = 'X'.
+      GR_RECIPIENT = cl_distributionlist_bcs=>getu_persistent( i_dliname = p_dlgrp
+                                                                           i_private = space ).
+      GR_REQUEST->ADD_RECIPIENT( GR_RECIPIENT ).
+      endif.
+
+
+      GR_REQUEST->SEND( ).
+
+        COMMIT WORK.
+
+      MESSAGE 'Email sent.' TYPE 'S'.
+
+    CATCH cX_BCS.
+      MESSAGE 'Email not sent.' TYPE 'A'.
+  ENDTRY.
+ENDFORM.
+*&---------------------------------------------------------------------*
+*& Form  GET_DL_LIST
+*&---------------------------------------------------------------------*
+FORM GET_DL_LIST.
+  Types: Begin of t_DistributionList,
+         OBJNAM like SOOD-OBJNAM,
+         OBJDES like SOOD-OBJDES,
+          end of t_DistributionList.
+
+  DATA: dl_TAB TYPE t_DistributionList OCCURS 0 WITH HEADER LINE.
+  DATA : RETURN LIKE DDSHRETVAL OCCURS 0 WITH HEADER LINE.
+
+  SELECT DISTINCT OBJNAM, OBJDES INTO TABLE @dl_TAB FROM SOOD
+    where OBJTP = 'DLI'.
+
+  CALL FUNCTION 'F4IF_INT_TABLE_VALUE_REQUEST'
+    EXPORTING
+*     DDIC_STRUCTURE         = ' '
+      RETFIELD    = 'OBJNAM'
+*     PVALKEY     = ' '
+      DYNPPROG    = SY-REPID
+      DYNPNR      = SY-DYNNR
+      DYNPROFIELD = 'p_dlgrp'
+*     STEPL       = 0
+*     WINDOW_TITLE           =
+*     VALUE       = ' '
+      VALUE_ORG   = 'S'
+*     MULTIPLE_CHOICE        = ' '
+*     DISPLAY     = ' '
+*     CALLBACK_PROGRAM       = ' '
+*     CALLBACK_FORM          = ' '
+*     CALLBACK_METHOD        =
+*     MARK_TAB    =
+*   IMPORTING
+*     USER_RESET  =
+    TABLES
+      VALUE_TAB   = dl_TAB
+*     FIELD_TAB   =
+      RETURN_TAB  = RETURN
+*     DYNPFLD_MAPPING        =
+*   EXCEPTIONS
+*     PARAMETER_ERROR        = 1
+*     NO_VALUES_FOUND        = 2
+*     OTHERS      = 3
+    .
+  IF SY-SUBRC <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+  p_dlgrp = RETURN-FIELDVAL.
+
+ENDFORM.
+**********************************************************************************************************************
+"&--------------------------------------------------------------------------------*
+"& Show notification in status line:                                              *
+"&     'Download: ' length_of_file units (non BIN: codepage) and path + filename  *
+"&--------------------------------------------------------------------------------*
+FORM SHOW_DOWNLOAD_SUCCESS.
+  DATA: PRC_MSGTEXT TYPE STRING.
+  CONCATENATE  'Download:'(003) p_DwnDir INTO PRC_MSGTEXT SEPARATED BY SPACE.
+  MESSAGE PRC_MSGTEXT TYPE 'S'.
+ENDFORM.
+**********************************************************************************************************************
+"&--------------------------------------------------------------------------------*
+"& Show notification in status line:                                              *
+"&     'Download: ' length_of_file units (non BIN: codepage) and path + filename  *
+"&--------------------------------------------------------------------------------*
+FORM SHOW_DOWNLOAD_FAILURE.
+  DATA: PRC_MSGTEXT TYPE STRING.
+  CONCATENATE  'Download:'(003) p_DwnDir ' failed' INTO PRC_MSGTEXT SEPARATED BY SPACE.
+  MESSAGE PRC_MSGTEXT TYPE 'E'.
+ENDFORM.

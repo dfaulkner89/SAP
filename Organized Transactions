@@ -1,0 +1,129 @@
+  0000100002                                                Operations                                                                                                                          
+  0000100003                                                File Directory/Tables                                                                                                               
+  0000100004                                                Basis                                                                                                                               
+  0000100005                                                ABAP Development                                                                                                                    
+  0000100006                                                SAP Query                                                                                                                           
+  0000100007                                                PO & Requisitions                                                                                                                   
+  0000100008                                                IDOC                                                                                                                                
+  0000100009                                                File Upload/Download                                                                                                                
+  0000100010                                                BW Maintenance                                                                                                                      
+  0000100011                                                Vendors                                                                                                                             
+  0000100012                                                Deliveries                                                                                                                          
+  0000100013                                                Sales                                                                                                                               
+  0000100014                                                Invoices                                                                                                                            
+  0000100015                                                Customers                                                                                                                           
+  0000100016                                                Stock                                                                                                                               
+  0000100017                                                Quotes                                                                                                                              
+  0000100018                                                Materials                                                                                                                           
+TR0000100019SU3                                             Maintain Users Own Data                                                                                                             
+  0000100020                                                GC Wave 1A                                                                                                                          
+TR0000200094YUSILBL                                         Inter Operation(WIP) label print                                                                                                    
+TR0000200095CO03                                            Display Production Order                                                                                                            
+TR0000200096YUS_EDWCTR                                      ED : Work Center Schedule download                                                                                                  
+TR0000300021AL11                                            Display SAP Directories                                                                                                             
+TR0000300022SE11                                            ABAP Dictionary Maintenance                                                                                                         
+TR0000300023SE16                                            Data Browser                                                                                                                        
+TR0000300024SE16N                                           General Table Display                                                                                                               
+  0000400025                                                Audit                                                                                                                               
+  0000400026                                                Job Schedules                                                                                                                       
+  0000400027                                                User Maintenance                                                                                                                    
+  0000400028                                                System Maintenance                                                                                                                  
+  0000400029                                                Tracing                                                                                                                             
+  0000400030                                                Transports                                                                                                                          
+TR0000400031SE93                                            Maintain Transaction Codes                                                                                                          
+TR0000400032SP01                                            Output Controller                                                                                                                   
+TR0000500033SA38                                            ABAP Reporting                                                                                                                      
+TR0000500034SE38                                            ABAP Editor                                                                                                                         
+TR0000500035SE37                                            ABAP Function Modules                                                                                                               
+TR0000600036SQVI                                            QuickViewer                                                                                                                         
+TR0000600037SQ00                                            SAP Query: Start queries                                                                                                            
+TR0000600038SQ01                                            SAP Query: Maintain queries                                                                                                         
+TR0000600039SQ02                                            SAP Query: Maintain InfoSet                                                                                                         
+TR0000600040SQ03                                            SAP Query: Maintain user groups                                                                                                     
+TR0000700041MIGO                                            Goods Movement                                                                                                                      
+TR0000700042ME51N                                           Create Purchase Requisition                                                                                                         
+TR0000700043ME23N                                           Display Purchase Order                                                                                                              
+TR0000700044ME52N                                           Change Purchase Requisition                                                                                                         
+TR0000700045ME53N                                           Display Purchase Requisition                                                                                                        
+TR0000700046ME80FN                                          General Analyses (F)                                                                                                                
+TR0000700047ME2L                                            Purchase Orders by Supplier                                                                                                         
+TR0000700048ME5A                                            Purchase Requisitions: List Display                                                                                                 
+TR0000800049WE02                                            Display IDoc                                                                                                                        
+TR0000800050WE05                                            IDoc Lists                                                                                                                          
+TR0000800051WE09                                            Search for IDocs by Content                                                                                                         
+TR0000800130WE31                                            Development IDoc Segment                                                                                                            
+TR0000800052BD87                                            Status Monitor for ALE Messages                                                                                                     
+TR0000800053WE19                                            Test tool                                                                                                                           
+TR0000800054SWU3                                            Automatic Workflow Customizing                                                                                                      
+TR0000800055OYEB                                            Event Linkage for Inbound IDocs                                                                                                     
+TR0000900056CG3Z                                            Upload file                                                                                                                         
+TR0000900057CG3Y                                            Download file                                                                                                                       
+TR0001000058LBWE                                            LO Data Ext.: Customizing Cockpit                                                                                                   
+TR0001000059CMOD                                            Enhancements                                                                                                                        
+TR0001000060RSO2                                            Oltp Metadata Repository                                                                                                            
+TR0001000061RSA2                                            SAPI DataSource Repository                                                                                                          
+TR0001000062RSA3                                            Extractor Checker                                                                                                                   
+TR0001000063RSA5                                            Install Business Content                                                                                                            
+TR0001000064RSA6                                            Maintain DataSources                                                                                                                
+TR0001000065ODQMON                                          Monitor for Operational Delta Queue                                                                                                 
+TR0001000066OLI3BW                                          Reorg.PURCHIS BW Extract Structures                                                                                                 
+TR0001000067OLI4BW                                          Reorg. PPIS Extract Structures                                                                                                      
+TR0001000068OLI7BW                                          Reorg. of VIS Extr. Struct.: Order                                                                                                  
+TR0001000069OLI8BW                                          Reorg. VIS Extr. Str.: Delivery                                                                                                     
+TR0001000070SBIW                                            BIW in IMG for OLTP                                                                                                                 
+TR0001000071LBWG                                            Delete Newly Reorg. BW Data                                                                                                         
+TR0001100072FBL1N                                           Vendor Line Items                                                                                                                   
+TR0001200073VL22                                            Display Delivery Change Documents                                                                                                   
+TR0001200074VL03                                            Display Outbound Delivery                                                                                                           
+TR0001200075VL03N                                           Display Outbound Delivery                                                                                                           
+TR0001300076VA03                                            Display Sales Order                                                                                                                 
+TR0001300077VA05                                            List of Sales Orders                                                                                                                
+TR0001400078VF03                                            Display Billing Documents                                                                                                           
+TR0001500079VD03                                            Display Customer (Sales)                                                                                                            
+TR0001500080XD03                                            Display Customer (Centrally)                                                                                                        
+TR0001600081ZMD04                                           Stock Requirement List                                                                                                              
+TR0001600082ZIWMSTOCK                                       Stock report and Price                                                                                                              
+TR0001600083MB52                                            List of Warehouse Stocks on Hand                                                                                                    
+TR0001700084VA23                                            Display Quotation                                                                                                                   
+TR0001800085MM03                                            Display Material &                                                                                                                  
+TR0002000086ZBACKLOG                                        Order Backlog                                                                                                                       
+TR0002000087ZORDRBLKMNTR                                    Sales document block                                                                                                                
+TR0002000088ZORDERCLOSE                                     Sales Order Item Closure                                                                                                            
+TR0002000089ZCCK                                            Confirmed Quantity Check                                                                                                            
+TR0002000090Z_OTC_PRC_DOC                                   Sales and Billing doc. Pricing check                                                                                                
+TR0002000091ZQUOT                                           Quotation status monitoring                                                                                                         
+TR0002000092ZBILLFLOW                                       Sales Billing Flow                                                                                                                  
+TR0002000093ZASPAPPR                                        CREDIT MEMO APPROVAL WORKFLOW                                                                                                       
+TR0002500097SM19                                            Security Audit Configuration                                                                                                        
+TR0002500098SM20                                            Analysis of Security Audit Log                                                                                                      
+TR0002600099SM36                                            Schedule Background Job                                                                                                             
+TR0002600100SM37                                            Overview of job selection                                                                                                           
+TR0002700101SUIM                                            User Information System                                                                                                             
+TR0002700102SU01                                            User Maintenance                                                                                                                    
+TR0002700103SM04                                            Logons to an AS Instance                                                                                                            
+TR0002700104AL08                                            Users Logged On                                                                                                                     
+TR0002700105SM04                                            Logons to an AS Instance                                                                                                            
+TR0002700106S_BCE_68001400                                  Users According to Complex Criteria                                                                                                 
+TR0002700107SU53                                            Evaluate Authorization Check                                                                                                        
+TR0002700108PFCG                                            Role Maintenance                                                                                                                    
+TR0002800109SM50                                            Work Processes of AS Instance                                                                                                       
+TR0002800110SM51                                            Started AS Instances                                                                                                                
+TR0002800111SM12                                            Display and Delete Locks                                                                                                            
+TR0002800112SM13                                            Administrate Update Records                                                                                                         
+TR0002800113ST03N                                           Workload and Performance Statistics                                                                                                 
+TR0002800114SM21                                            system log                                                                                                                          
+TR0002800115SNOTE                                           Note Assistant                                                                                                                      
+TR0002800116ST22                                            ABAP Dump Analysis                                                                                                                  
+TR0002800117RZ10                                            Maintain Profile Parameters                                                                                                         
+TR0002800118RZ11                                            Profile Parameter Maintenance                                                                                                       
+TR0002800119DB02                                            Tables and Indexes Monitor                                                                                                          
+TR0002800120SMICM                                           ICM Monitor                                                                                                                         
+TR0002800121SMMS                                            Message Server Monitor                                                                                                              
+TR0002800122SCOT                                            SAPconnect - Administration                                                                                                         
+TR0002800123SOST                                            SAPconnect Send Requests                                                                                                            
+TR0002900124ST12                                            Single transaction analysis                                                                                                         
+TR0002900125STAD                                            Statistics display for all systems                                                                                                  
+TR0002900126ST05                                            Performance Trace                                                                                                                   
+TR0003000127SE09                                            Transport Organizer                                                                                                                 
+TR0003000128STMS                                            Transport Management System                                                                                                         
+TR0003000129STMS_IMPORT                                     TMS Import Queue                                                                                                                    
